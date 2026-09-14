@@ -1,0 +1,4 @@
+{% load static %}<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pitwall — Race Strategy Explorer</title><link rel="stylesheet" href="{% static 'app.css' %}"></head>
+<body><header><a class="brand" href="/">▰ <span>PITWALL</span><small>RACE INTELLIGENCE</small></a><nav><a href="/">Race explorer</a>{% if user.is_authenticated %}<span>{{ user.username }}</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="text-button">Sign out</button></form>{% else %}<a href="{% url 'login' %}">Sign in</a><a class="nav-button" href="{% url 'signup' %}">Create account ↗</a>{% endif %}</nav></header>
+<main>{% block content %}{% endblock %}</main><footer><span>PITWALL / A project by Dev Patel</span><span>Independent portfolio project · Not affiliated with Formula 1</span></footer>{% block scripts %}{% endblock %}</body></html>

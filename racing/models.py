@@ -6,6 +6,8 @@ class Race(models.Model):
     year = models.PositiveIntegerField()
     circuit = models.CharField(max_length=100)
     source = models.CharField(max_length=250, default='Simulated demo data')
+    # Fastest-lap replay for the hero: normalised track points, telemetry, sector splits and podium.
+    replay = models.JSONField(null=True, blank=True)
     class Meta:
         constraints = [models.UniqueConstraint(fields=['name', 'year'], name='unique_race')]
         ordering = ['-year', 'name']

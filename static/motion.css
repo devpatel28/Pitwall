@@ -1,0 +1,169 @@
+/* Pitwall motion layer: background telemetry, hero replay, reveals and transitions.
+   Hidden start states apply only under html.motion, which is set when the visitor has not asked for reduced motion. */
+:root{--purple:#b46bff;--green:#3ddc84;--yellow:#f2d14b;--red:#ff4545;--ease-out:cubic-bezier(.16,1,.3,1);--ease-io:cubic-bezier(.65,0,.35,1)}
+
+/* Page-to-page transitions (Chromium cross-document view transitions; other browsers navigate normally) */
+@view-transition{navigation:auto}
+header{view-transition-name:site-header}
+::view-transition-old(root){animation:.5s cubic-bezier(.4,0,1,1) both page-out}
+::view-transition-new(root){animation:.95s var(--ease-out) .15s both page-in}
+@keyframes page-out{to{opacity:0;transform:translateX(-48px) scale(.985);filter:blur(4px)}}
+@keyframes page-in{from{opacity:0;transform:translateX(64px) scale(.985);filter:blur(4px)}}
+
+/* Background telemetry canvas and scroll progress */
+#scene-bg,#telemetry-bg{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+#scene-bg{z-index:-2;background:var(--bg)}
+.scroll-progress{position:fixed;top:0;left:0;right:0;height:2px;z-index:20;background:linear-gradient(90deg,var(--lime),var(--blue));transform-origin:0 50%;transform:scaleX(0)}
+@supports (animation-timeline:scroll()){.scroll-progress{animation:progress linear both;animation-timeline:scroll(root)}}
+@keyframes progress{to{transform:scaleX(1)}}
+
+/* Sticky header that turns to glass once the page scrolls */
+header{position:sticky;top:0;z-index:10;transition:background .5s,border-color .5s,height .5s var(--ease-out)}
+header.scrolled{background:rgba(12,16,19,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);height:70px}
+.brand{transition:transform .45s var(--ease-out)}
+.brand:hover{transform:translateX(4px)}
+nav>a:not(.nav-button){position:relative}
+nav>a:not(.nav-button):after{content:'';position:absolute;left:0;right:0;bottom:-6px;height:1px;background:var(--lime);transform:scaleX(0);transform-origin:100% 50%;transition:transform .5s var(--ease-out)}
+nav>a:not(.nav-button):hover:after{transform:scaleX(1);transform-origin:0 50%}
+.nav-button,.secondary{transition:border-color .35s,color .35s,background .35s}
+.nav-button:hover,.secondary:hover{border-color:var(--lime);color:var(--lime)}
+
+/* Buttons: a light sweep, like a pit board flashing */
+.primary{position:relative;overflow:hidden;transition:transform .3s var(--ease-out),box-shadow .4s}
+.primary:after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-120%)}
+.primary:hover{box-shadow:0 0 32px rgba(215,255,98,.3)}
+.primary:hover:after{transform:translateX(120%);transition:transform .9s var(--ease-out)}
+.primary:active{transform:scale(.97)}
+select{transition:border-color .35s,box-shadow .35s}
+select:hover{border-color:#4d5a65}
+select:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(215,255,98,.12)}
+
+/* Start lights: five reds at one-second intervals, then lights out */
+.start-lights{display:flex;gap:9px;margin-bottom:24px}
+.start-lights i{width:16px;height:16px;border-radius:50%;background:#1c2329;border:1px solid #2f3942;transition:background .12s,box-shadow .12s}
+.start-lights i.on{background:var(--red);border-color:#ff8080;box-shadow:0 0 14px rgba(255,69,69,.85),0 0 38px rgba(255,69,69,.4);animation:light-on .35s var(--ease-out)}
+.start-lights.out i{transition:background .7s,box-shadow .7s}
+.lights-out .start-lights{animation:lights-flash 1.2s ease-out}
+@keyframes light-on{from{transform:scale(.7)}}
+@keyframes lights-flash{0%{filter:brightness(2.2)}100%{filter:none}}
+
+/* Headline line reveal */
+h1 .line{display:block;overflow:hidden;padding-bottom:.06em}
+h1 .line>span{display:inline-block}
+.motion .hero h1 .line>span{transform:translateY(110%) rotate(2deg)}
+.motion .hero .eyebrow,.motion .hero p,.motion .hero .start-lights{opacity:0;transform:translateY(16px)}
+.motion .hero.go h1 .line>span{transform:none;transition:transform 1.3s var(--ease-out) .25s}
+.motion .hero.go h1 .line:nth-child(2)>span{transition-delay:.4s}
+.motion .hero.go .start-lights{opacity:1;transform:none;transition:opacity .8s,transform .8s var(--ease-out)}
+.motion .hero.go .eyebrow,.motion .hero.go p{opacity:1;transform:none;transition:opacity 1s .55s,transform 1s .55s var(--ease-out)}
+.motion .hero.go p{transition-delay:.75s}
+.motion .hero-art{opacity:0;transform:translateY(24px)}
+.motion .hero.go .hero-art{opacity:1;transition:opacity 1.2s .3s}
+.hero>div:first-child,.hero-art{will-change:transform}
+
+/* Hero replay */
+.hero{padding-bottom:190px;position:relative}
+.hero-art{height:auto;min-height:300px;display:flex;flex-direction:column;justify-content:center;mask-image:none;background-position:center}
+.replay-head{display:flex;justify-content:space-between;font:10px monospace;letter-spacing:2px;color:var(--muted);margin-bottom:6px;width:min(100%,440px);align-self:center}
+.replay-head span:first-child{color:var(--lime)}
+.circuit{width:100%;height:auto;max-height:280px;overflow:visible;transition:opacity .45s,transform .45s var(--ease-out),filter .45s}
+.switching .circuit{opacity:0;transform:scale(.94) rotate(-2deg);filter:blur(3px)}
+.switching .timing{opacity:.25}
+.circuit-base{fill:none;stroke:#1f272e;stroke-width:13;stroke-linejoin:round;stroke-linecap:round}
+.circuit-edge{fill:none;stroke:#5d6d63;stroke-width:1.4;stroke-linejoin:round}
+.circuit-sector{fill:none;stroke-width:4;stroke-linecap:round;stroke:transparent;opacity:0;transition:opacity .5s,stroke .3s}
+.circuit-sector.purple{stroke:var(--purple);opacity:.95}
+.circuit-sector.green{stroke:var(--green);opacity:.95}
+.circuit-sector.yellow{stroke:var(--yellow);opacity:.95}
+.circuit-sector.fade{opacity:.18}
+.circuit-trail{fill:none;stroke:var(--lime);stroke-opacity:.5;stroke-width:5;stroke-linecap:round}
+.car{fill:var(--lime);filter:drop-shadow(0 0 6px currentColor);color:var(--lime)}
+.start-line{stroke:#eef1f3;stroke-width:3;stroke-dasharray:2 2}
+.sector-tag{font:10px monospace;fill:var(--muted);letter-spacing:1px}
+.timing{display:grid;gap:9px;margin:6px auto 0;width:min(100%,440px);font:11px monospace;letter-spacing:1px;color:var(--muted);transition:opacity .45s}
+.timing-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:9px}
+.driver-chip{--team:var(--lime);font:700 13px monospace;color:var(--text);padding:3px 8px 3px 10px;border-left:3px solid var(--team);background:linear-gradient(90deg,color-mix(in srgb,var(--team) 22%,transparent),transparent)}
+.driver-team{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lap-time{font-size:22px;color:var(--text);letter-spacing:0;font-variant-numeric:tabular-nums}
+.sector-times{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sector-times span{border-top:2px solid #2b343c;padding-top:6px;transition:border-color .4s,color .4s;font-variant-numeric:tabular-nums}
+.sector-times b{display:block;color:var(--text);font-weight:400;font-size:12px}
+.sector-times .purple{border-color:var(--purple)}.sector-times .purple b{color:var(--purple)}
+.sector-times .green{border-color:var(--green)}.sector-times .green b{color:var(--green)}
+.sector-times .yellow{border-color:var(--yellow)}.sector-times .yellow b{color:var(--yellow)}
+.live{display:grid;grid-template-columns:auto auto 1fr 1fr;gap:12px;align-items:center;font-size:10px}
+.live b{color:var(--text);font-weight:400;font-size:12px;font-variant-numeric:tabular-nums;display:inline-block;min-width:2.2ch;text-align:right}
+.pedal{display:flex;align-items:center;gap:6px}
+.pedal i{flex:1;height:5px;background:#1c2329;border-radius:3px;overflow:hidden}
+.pedal i b{display:block;height:100%;min-width:0;background:var(--blue);transform:scaleX(0);transform-origin:0 50%;transition:transform .12s linear}
+.pedal.brake i b{background:var(--red)}
+.timing small{font-size:9px;letter-spacing:2px;color:#6b7984}
+
+/* Mini track beside the race title */
+.race-title{display:flex;align-items:center;gap:14px}
+.mini-track{width:64px;height:40px;flex:none}
+.mini-track path{fill:none;stroke:var(--lime);stroke-width:14;stroke-linejoin:round;opacity:.85}
+.inter{background:#78ca8f}
+
+/* Scroll reveal: slower, with a little more travel; children of [data-reveal-stagger] cascade in */
+.motion [data-reveal]{opacity:0;transform:translateY(44px);filter:blur(3px)}
+.motion [data-reveal].in{opacity:1;transform:none;filter:none;transition:opacity 1.2s var(--ease-out),transform 1.2s var(--ease-out),filter 1.2s var(--ease-out);transition-delay:var(--reveal-delay,0s)}
+.motion [data-reveal-stagger]>*{opacity:0;transform:translateY(18px)}
+.motion [data-reveal-stagger].in>*{opacity:1;transform:none;transition:opacity .9s var(--ease-out),transform .9s var(--ease-out);transition-delay:calc(var(--reveal-delay,0s) + var(--stagger,0ms) + .15s)}
+.section-heading h2 span{display:inline-block}
+.motion .section-heading.in h2 span{animation:tick-in 1s var(--ease-out) .2s both}
+@keyframes tick-in{from{opacity:0;transform:translateX(-14px)}}
+
+/* Interactive surfaces with a cursor spotlight */
+.metric,.panel,.saved-grid>a,.selectors{position:relative;transition:border-color .4s,transform .45s var(--ease-out),box-shadow .45s}
+.panel:after,.metric:after,.selectors:after,.saved-grid>a:after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .5s;background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),rgba(215,255,98,.06),transparent 60%)}
+.panel:hover:after,.metric:hover:after,.selectors:hover:after,.saved-grid>a:hover:after{opacity:1}
+.metric:hover,.saved-grid>a:hover{border-color:#43505b;transform:translateY(-4px);box-shadow:0 14px 34px rgba(0,0,0,.4)}
+.metric{overflow:hidden}
+.metric:before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent,var(--lime));transform:scaleY(0);transform-origin:50% 0;transition:transform .8s var(--ease-out)}
+.metric.in-view:before,.metric:hover:before{transform:scaleY(1)}
+.metric strong{font-variant-numeric:tabular-nums}
+.saved-grid>a:hover{border-color:var(--lime)}
+.versus{animation:versus 2.4s ease-in-out infinite}
+@keyframes versus{50%{color:var(--lime)}}
+details.panel[open] .table-scroll{animation:fade-up .7s var(--ease-out)}
+
+/* Loading state: a timing beam sweeping under the status text */
+#status.loading{position:relative;padding-bottom:8px}
+#status.loading:after{content:'';position:absolute;left:0;bottom:0;height:2px;width:30%;background:linear-gradient(90deg,transparent,var(--lime),transparent);animation:sweep 1.2s ease-in-out infinite}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(340%)}}
+
+/* Results entrance */
+.motion #results.entering .race-heading{animation:fade-up 1s var(--ease-out) both}
+.motion .metrics .metric{animation:fade-up 1.1s var(--ease-out) both;animation-delay:calc(.15s + var(--i,0)*150ms)}
+.motion .stint{animation:stint-in 1.3s var(--ease-out) both;animation-delay:var(--d,0s)}
+.motion #chart.enter circle{animation:dot-in .7s var(--ease-out) both;animation-delay:var(--d,0s)}
+@keyframes fade-up{from{opacity:0;transform:translateY(24px)}}
+@keyframes stint-in{from{clip-path:inset(0 100% 0 0);opacity:.4}to{clip-path:inset(0 0 0 0)}}
+@keyframes dot-in{from{opacity:0}}
+
+/* Chart scrubber */
+#chart svg{cursor:crosshair;touch-action:pan-y}
+#chart circle{transition:r .25s}
+#chart circle:hover,#chart circle:focus{r:6px}
+.scrub{pointer-events:none;opacity:0;transition:opacity .25s}
+.scrub.show{opacity:1}
+.scrub line{stroke:#eef1f3;stroke-opacity:.35;stroke-dasharray:2 4}
+.scrub rect{fill:#0c1013;fill-opacity:.94;stroke:#3a4650}
+.scrub text{font:15px monospace;fill:#eef1f3}
+.scrub .muted{fill:#a1adb7;font-size:12px;letter-spacing:1px}
+
+/* Auth pages */
+.motion .auth>*{animation:fade-up 1.1s var(--ease-out) both}
+.motion .auth>:nth-child(2){animation-delay:.12s}.motion .auth>:nth-child(3){animation-delay:.24s}.motion .auth>:nth-child(4){animation-delay:.36s}.motion .auth>:nth-child(5){animation-delay:.48s}
+.auth input:not([type=hidden]){transition:border-color .35s,box-shadow .35s}
+.auth input:not([type=hidden]):focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(215,255,98,.12);outline:none}
+
+@media(max-width:900px){.hero-art{min-height:0;margin-top:8px}.circuit{max-height:230px}}
+@media(max-width:560px){.lap-time{font-size:18px}.start-lights i{width:13px;height:13px}.driver-team{display:none}.timing-row{grid-template-columns:auto 1fr}.lap-time{text-align:right}.live{grid-template-columns:1fr 1fr;row-gap:8px}}
+
+@media(prefers-reduced-motion:reduce){
+  @view-transition{navigation:none}
+  *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  .scroll-progress{display:none}
+}

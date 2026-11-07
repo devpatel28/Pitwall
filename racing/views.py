@@ -22,7 +22,7 @@ def selection(params):
 @require_GET
 def dashboard(request):
     races = list(Race.objects.all())
-    catalog = [{'id': r.id, 'name': str(r), 'circuit': r.circuit, 'source': r.source, 'drivers': list(r.laps.order_by('driver').values_list('driver', flat=True).distinct())} for r in races]
+    catalog = [{'id': r.id, 'name': str(r), 'circuit': r.circuit, 'source': r.source, 'drivers': list(r.laps.order_by('driver').values_list('driver', flat=True).distinct()), 'podium': (r.replay or {}).get('podium', []), 'replay': bool(r.replay)} for r in races]
     saved = Bookmark.objects.filter(user=request.user).select_related('race') if request.user.is_authenticated else []
     return render(request, 'dashboard.html', {'catalog': catalog, 'saved': saved})
 
@@ -33,6 +33,15 @@ def comparison(request):
     except ValueError as error:
         return JsonResponse({'error': str(error)}, status=400)
     return JsonResponse({'race': str(race), 'source': race.source, 'drivers': [summarize(list(race.laps.filter(driver=d))) for d in (a, b)]})
+
+@require_GET
+def replay(request, race_id):
+    race = get_object_or_404(Race, pk=race_id)
+    if not race.replay:
+        return JsonResponse({'error': 'No replay is available for this race.'}, status=404)
+    response = JsonResponse(race.replay)
+    response['Cache-Control'] = 'public, max-age=3600'
+    return response
 
 @login_required
 @require_POST

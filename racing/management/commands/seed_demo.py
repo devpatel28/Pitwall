@@ -8,7 +8,7 @@ class Command(BaseCommand):
     @transaction.atomic
     def handle(self, *args, **options):
         for name, circuit, count, base in [('Bahrain Demo Grand Prix', 'Sakhir · 57 laps', 57, 94), ('Italian Demo Grand Prix', 'Monza · 53 laps', 53, 83)]:
-            race, created = Race.objects.get_or_create(name=name, year=2024, defaults={'circuit': circuit})
+            race, created = Race.objects.get_or_create(name=name, year=2025, defaults={'circuit': circuit})
             if not created:
                 continue
             laps = []

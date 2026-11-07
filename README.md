@@ -1,8 +1,8 @@
 # Pitwall — F1 Race Strategy Explorer
 
-A Django application by Dev Patel for comparing lap pace and tyre strategy. Explore two drivers side by side, filter unrepresentative laps, inspect tyre stints, and save comparisons to your account.
+A Django application by Dev Patel for comparing lap pace and tyre strategy using real 2025 Formula 1 race data. Explore two drivers side by side, filter unrepresentative laps, inspect tyre stints, watch each race's fastest lap replayed on the real circuit with live telemetry, and save comparisons to your account.
 
-**Status:** working first version. Included race times and strategies are entirely simulated, including the driver comparisons. They are not historical F1 results. Real data can be imported through a validated CSV command. No prediction engine or live timing integration is included yet.
+**Status:** working version. The 2025 Monaco, British, Belgian, Italian, Las Vegas and Abu Dhabi Grands Prix are imported from [OpenF1](https://openf1.org), an unofficial, community-run F1 timing API. Other races can be imported with the same command or through a validated CSV. If OpenF1 cannot be reached, clearly labelled simulated demo races are loaded instead. No prediction engine or live timing integration is included yet.
 
 ## Start with Docker
 
@@ -12,7 +12,7 @@ Install Docker Desktop, start it, then open a terminal in this directory:
 docker compose up --build
 ```
 
-Open http://localhost:8000. Compose starts PostgreSQL, applies migrations, loads two demo races, collects static assets and starts Gunicorn. Create an account in the app to save comparisons. No shared demo password is provided.
+Open http://localhost:8000. Compose starts PostgreSQL, applies migrations, imports the 2025 races from OpenF1 (about two minutes on first start, needs internet; falls back to simulated demo races), collects static assets and starts Gunicorn. Create an account in the app to save comparisons. No shared demo password is provided.
 
 ```sh
 docker compose exec web python manage.py test
@@ -33,7 +33,7 @@ python -m venv .venv
 # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py seed_demo
+python manage.py import_openf1   # 2025 Monaco, Silverstone, Spa, Monza, Las Vegas, Abu Dhabi; or: python manage.py seed_demo (offline)
 python manage.py runserver
 ```
 
@@ -41,12 +41,15 @@ Visit http://127.0.0.1:8000. To stop the local server, press Ctrl+C. Gunicorn is
 
 ## What is implemented
 
-- Responsive dashboard with two demo races and four driver codes per race.
+- Responsive dashboard with real 2025 races and every classified driver; defaults to Monaco, comparing the winner and runner-up.
+- 3D background (`static/scene.js`, dependency-free canvas projection): perspective grid floor and the selected circuit with real elevation from car position data, with the replayed car; the camera orbits slowly, follows the pointer and tilts toward a plan view on scroll.
+- Hero replay of each race's fastest lap: circuit drawn from car position data, real sector times in F1 timing colours, and speed/throttle/brake telemetry synced to the car. It follows the race selected in the explorer.
+- Motion layer (`static/motion.js`, `static/motion.css`): start-light sequence, page view transitions, scroll reveals, animated chart, metrics and stints, and a lap scrubber. All of it respects `prefers-reduced-motion`.
 - Custom SVG lap-time chart, clean-lap filter, tyre-stint timeline, accessible lap table.
 - Account creation, login, POST-only logout, CSRF-protected user-specific bookmarks.
 - Race/lap database models and Django admin.
 - JSON comparison endpoint with selection validation.
-- Atomic, validated CSV import; idempotent demo seeding.
+- OpenF1 importer (`racing/openf1.py`) with rate limiting and retries; shared validation (`racing/importing.py`) for OpenF1 and atomic CSV imports; idempotent demo seeding.
 - Django tests and a GitHub Actions workflow configured to test with PostgreSQL.
 - Docker Compose with PostgreSQL health checks and a non-root web container.
 
@@ -57,6 +60,17 @@ Median and fastest pace use only laps with a positive time, `clean=1` and `pit=0
 Median pace is descriptive. It is not adjusted for fuel, traffic, safety cars, weather or tyre age. A faster median does not prove a better strategy or predict the race result. Data importers must mark safety-car laps, out-laps and other unsuitable laps as `clean=0` where appropriate.
 
 ## Import race data
+
+### From OpenF1
+
+```sh
+python manage.py import_openf1                         # default 2025 races
+python manage.py import_openf1 Suzuka "Las Vegas" --year 2025
+```
+
+Arguments are OpenF1 `circuit_short_name` values. Races already imported are skipped. Requests are spaced to respect OpenF1's free rate limit. For each race the importer marks the pit marker on each stint's in-lap and flags lap 1, pit in- and out-laps, safety car, virtual safety car and red flag laps (plus the restart lap), and laps slower than 110% of that driver's median as not clean. It also stores a replay of the fastest lap: track outline and elevation from car positions, telemetry, sector splits, timing colours (purple: best of the race; green: driver's best; yellow: slower) and the podium. OpenF1 data is unofficial; check its terms before any commercial use.
+
+### From CSV
 
 CSV columns must be exactly:
 

@@ -4,6 +4,20 @@ A Django application by Dev Patel for comparing lap pace and tyre strategy. Expl
 
 **Status:** working first version. Included race times and strategies are entirely simulated, including the driver comparisons. They are not historical F1 results. Real data can be imported through a validated CSV command. No prediction engine or live timing integration is included yet.
 
+## Open in GitHub Codespaces
+
+Run Pitwall in the cloud from any browser, with no local install.
+
+1. On the repository page, click **Code** → **Codespaces** → **Create codespace on main**.
+2. Wait about two minutes on first launch. Dependencies install, migrations run, demo races load, and the server starts.
+3. Pitwall opens in a new tab. If it doesn't, open the **Ports** tab and click the globe icon next to **Pitwall (8000)**.
+
+The forwarded address is private to your GitHub account by default. Keep it that way: changing port visibility to **Public** makes the app reachable by anyone with the link.
+
+Your data is stored in SQLite inside the codespace. It survives stopping and restarting, but is lost if the codespace is deleted. GitHub deletes inactive codespaces after 30 days by default.
+
+To return later, go to [github.com/codespaces](https://github.com/codespaces) and open the existing codespace instead of creating a new one. Stop it when you're done to save your free monthly hours.
+
 ## Start with Docker
 
 Install Docker Desktop, start it, then open a terminal in this directory:

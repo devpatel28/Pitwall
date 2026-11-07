@@ -1,0 +1,24 @@
+{
+  "name": "Pitwall",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+  "postCreateCommand": "pip install --user -r requirements.txt",
+  "postStartCommand": "python manage.py migrate --noinput && python manage.py seed_demo",
+  "postAttachCommand": {
+    "server": "python manage.py runserver 0.0.0.0:8000"
+  },
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": {
+      "label": "Pitwall",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "customizations": {
+    "codespaces": {
+      "openFiles": ["README.md"]
+    },
+    "vscode": {
+      "extensions": ["ms-python.python"]
+    }
+  }
+}

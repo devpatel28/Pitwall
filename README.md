@@ -9,7 +9,7 @@ A Django application by Dev Patel for comparing lap pace and tyre strategy. Expl
 Run Pitwall in the cloud from any browser, with no local install.
 
 1. On the repository page, click **Code** → **Codespaces** → **Create codespace on main**.
-2. Wait about two minutes on first launch. Dependencies install, migrations run, demo races load, and the server starts.
+2. Wait a few minutes on first launch. Dependencies install, migrations run, and race data loads: real races are imported from OpenF1 when that command is available, otherwise the simulated demo races are used. Then the server starts.
 3. Pitwall opens in a new tab. If it doesn't, open the **Ports** tab and click the globe icon next to **Pitwall (8000)**.
 
 The forwarded address is private to your GitHub account by default. Keep it that way: changing port visibility to **Public** makes the app reachable by anyone with the link.

@@ -4,6 +4,20 @@ A Django application by Dev Patel for comparing lap pace and tyre strategy using
 
 **Status:** working version. The 2025 Monaco, British, Belgian, Italian, Las Vegas and Abu Dhabi Grands Prix are imported from [OpenF1](https://openf1.org), an unofficial, community-run F1 timing API. Other races can be imported with the same command or through a validated CSV. If OpenF1 cannot be reached, clearly labelled simulated demo races are loaded instead. No prediction engine or live timing integration is included yet.
 
+## Open in GitHub Codespaces
+
+Run Pitwall in the cloud from any browser, with no local install.
+
+1. On the repository page, click **Code** → **Codespaces** → **Create codespace on main**.
+2. Wait a few minutes on first launch. Dependencies install, migrations run, and race data loads: real races are imported from OpenF1 when that command is available, otherwise the simulated demo races are used. Then the server starts.
+3. Pitwall opens in a new tab. If it doesn't, open the **Ports** tab and click the globe icon next to **Pitwall (8000)**.
+
+The forwarded address is private to your GitHub account by default. Keep it that way: changing port visibility to **Public** makes the app reachable by anyone with the link.
+
+Your data is stored in SQLite inside the codespace. It survives stopping and restarting, but is lost if the codespace is deleted. GitHub deletes inactive codespaces after 30 days by default.
+
+To return later, go to [github.com/codespaces](https://github.com/codespaces) and open the existing codespace instead of creating a new one. Stop it when you're done to save your free monthly hours.
+
 ## Start with Docker
 
 Install Docker Desktop, start it, then open a terminal in this directory:

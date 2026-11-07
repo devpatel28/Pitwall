@@ -7,6 +7,16 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'local-development-only-do-not-deploy')
 if not DEBUG and SECRET_KEY == 'local-development-only-do-not-deploy':
     raise RuntimeError('Set SECRET_KEY before deploying.')
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,[::1]').split(',')
+CSRF_TRUSTED_ORIGINS = [o for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o]
+
+# GitHub Codespaces serves forwarded ports at https://<codespace>-<port>.<domain>.
+# Trust only this codespace's own forwarded address, not every codespace.
+CODESPACE_NAME = os.getenv('CODESPACE_NAME')
+CODESPACE_DOMAIN = os.getenv('GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN')
+if CODESPACE_NAME and CODESPACE_DOMAIN:
+    codespace_host = f'{CODESPACE_NAME}-8000.{CODESPACE_DOMAIN}'
+    ALLOWED_HOSTS.append(codespace_host)
+    CSRF_TRUSTED_ORIGINS.append(f'https://{codespace_host}')
 INSTALLED_APPS = ['django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes', 'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles', 'racing']
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware', 'whitenoise.middleware.WhiteNoiseMiddleware', 'django.contrib.sessions.middleware.SessionMiddleware', 'django.middleware.common.CommonMiddleware', 'django.middleware.csrf.CsrfViewMiddleware', 'django.contrib.auth.middleware.AuthenticationMiddleware', 'django.contrib.messages.middleware.MessageMiddleware', 'django.middleware.clickjacking.XFrameOptionsMiddleware']
 ROOT_URLCONF = 'config.urls'

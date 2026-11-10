@@ -90,7 +90,7 @@
   const state = {replay: null, f: 0, running: false};
   let engine = null;
   function loadReplay(id) {
-    if (!replays.has(id)) replays.set(id, (id ? fetch(`/api/races/${id}/replay/`).then(r => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null)).then(data => data && data.track && data.track.length > 10 ? data : simulatedReplay()));
+    if (!replays.has(id)) replays.set(id, (id ? fetch(window.PITWALL_STATIC ? `data/replays/${id}.json` : `/api/races/${id}/replay/`).then(r => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null)).then(data => data && data.track && data.track.length > 10 ? data : simulatedReplay()));
     return replays.get(id);
   }
   function trackPath(replay) {return 'M' + replay.track.map(([, x, y]) => `${x},${y}`).join(' L') + ' Z';}

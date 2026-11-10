@@ -78,6 +78,15 @@ function render(data) {
   window.PitwallMotion?.results(document.getElementById('results'), colors);
   renderChart();
 }
+async function loadComparison(params) {
+  if(!window.PITWALL_STATIC) return fetch(`/api/comparison/?${params}`);
+  const json=(body,status)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
+  const response=await fetch(`data/races/${encodeURIComponent(params.get('race'))}.json`);
+  if(!response.ok) return json({error:'Unable to load this race.'},404);
+  const data=await response.json();const a=data.drivers[params.get('a')],b=data.drivers[params.get('b')];
+  if(!a||!b||params.get('a')===params.get('b')) return json({error:'Choose two different drivers from this race.'},400);
+  return json({race:data.race,source:data.source,drivers:[a,b]},200);
+}
 async function compare(event) {
   if(event) event.preventDefault();
   const ticket=++requestNumber;
@@ -85,7 +94,7 @@ async function compare(event) {
   if(aSelect.value===bSelect.value){statusEl.textContent='Choose two different drivers to compare.';return;}
   const params=new URLSearchParams({race:raceSelect.value,a:aSelect.value,b:bSelect.value});
   statusEl.textContent='Loading race comparison…';statusEl.classList.add('loading');
-  try {const response=await fetch(`/api/comparison/?${params}`);const data=await response.json();if(ticket!==requestNumber)return;if(!response.ok)throw new Error(data.error || 'Unable to load this race.');render(data);history.replaceState(null,'',`/?${params}`);const save=document.getElementById('save-form');if(save)for(const [key,value] of params)save.elements[key].value=value;statusEl.textContent='';}
+  try {const response=await loadComparison(params);const data=await response.json();if(ticket!==requestNumber)return;if(!response.ok)throw new Error(data.error || 'Unable to load this race.');render(data);history.replaceState(null,'',`${location.pathname}?${params}`);const save=document.getElementById('save-form');if(save)for(const [key,value] of params)save.elements[key].value=value;statusEl.textContent='';}
   catch(error){if(ticket===requestNumber)statusEl.textContent=error.message;}
   finally{if(ticket===requestNumber)statusEl.classList.remove('loading');}
 }

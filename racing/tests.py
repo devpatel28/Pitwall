@@ -134,3 +134,22 @@ class OpenF1TransformTests(TestCase):
         self.assertEqual(self.client.get(f'/api/races/{race.pk}/replay/').json()['podium'], ['AAA'])
         plain = create_race('Plain Grand Prix', 2025, 'Test', 'Fixture', build_laps([('AAA', 1, 90.0, 'SOFT', False, True), ('BBB', 1, 91.0, 'SOFT', False, True)]))
         self.assertEqual(self.client.get(f'/api/races/{plain.pk}/replay/').status_code, 404)
+    def test_export_site_writes_read_only_static_copy(self):
+        import json
+        call_command('seed_demo', verbosity=0)
+        race = Race.objects.first()
+        with tempfile.TemporaryDirectory() as tmp:
+            call_command('export_site', tmp, verbosity=0)
+            out = Path(tmp)
+            html = (out / 'index.html').read_text(encoding='utf-8')
+            self.assertIn('window.PITWALL_STATIC=true', html)
+            self.assertIn('./static/app.js', html)
+            self.assertNotIn('"/static/', html)
+            self.assertNotIn('Sign in', html)
+            self.assertNotIn('csrfmiddlewaretoken', html)
+            self.assertTrue((out / 'static' / 'app.js').exists())
+            self.assertTrue((out / '.nojekyll').exists())
+            data = json.loads((out / 'data' / 'races' / f'{race.pk}.json').read_text())
+            api = self.client.get('/api/comparison/', {'race': race.pk, 'a': 'HAM', 'b': 'VER'}).json()
+            self.assertEqual(data['drivers']['HAM'], api['drivers'][0])
+            self.assertEqual(data['drivers']['VER'], api['drivers'][1])

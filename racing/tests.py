@@ -153,3 +153,20 @@ class OpenF1TransformTests(TestCase):
             api = self.client.get('/api/comparison/', {'race': race.pk, 'a': 'HAM', 'b': 'VER'}).json()
             self.assertEqual(data['drivers']['HAM'], api['drivers'][0])
             self.assertEqual(data['drivers']['VER'], api['drivers'][1])
+    def test_stint_trend_slope_and_minimum(self):
+        from .services import stint_trend, MIN_TREND_LAPS
+        laps = [l for l in build_laps([('AAA', n, 90 + 0.1 * n, 'SOFT', False, True) for n in range(1, 11)] + [('BBB', 1, 90.0, 'SOFT', False, True)]) if l.driver == 'AAA']
+        trend = stint_trend(laps)
+        self.assertEqual(trend['per_lap'], 0.1)
+        self.assertEqual(trend['laps'], 10)
+        few = [l for l in build_laps([('AAA', n, 90.0, 'SOFT', False, True) for n in range(1, MIN_TREND_LAPS)] + [('BBB', 1, 90.0, 'SOFT', False, True)]) if l.driver == 'AAA']
+        self.assertIsNone(stint_trend(few))
+        mixed = [l for l in build_laps([('AAA', 1, 95.0, 'SOFT', False, False)] + [('AAA', n, 90 - 0.05 * n, 'SOFT', n == 8, True) for n in range(2, 9)] + [('BBB', 1, 90.0, 'SOFT', False, True)]) if l.driver == 'AAA']
+        self.assertEqual(stint_trend(mixed)['per_lap'], -0.05)
+    def test_summarize_attaches_trend_to_each_stint(self):
+        laps = [l for l in build_laps([('AAA', n, 90 + 0.2 * n, 'MEDIUM', n == 6, True) for n in range(1, 7)] + [('AAA', n, 89 + 0.05 * n, 'HARD', False, True) for n in range(7, 13)] + [('BBB', 1, 90.0, 'SOFT', False, True)]) if l.driver == 'AAA']
+        result = summarize(laps)
+        self.assertEqual([s['compound'] for s in result['stints']], ['MEDIUM', 'HARD'])
+        self.assertEqual(result['stints'][0]['trend']['per_lap'], 0.2)
+        self.assertEqual(result['stints'][0]['trend']['laps'], 5)
+        self.assertEqual(result['stints'][1]['trend']['per_lap'], 0.05)

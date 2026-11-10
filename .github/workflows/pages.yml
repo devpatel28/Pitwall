@@ -24,8 +24,9 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt
       - run: python manage.py migrate --noinput
-      # Real 2025 races from OpenF1; falls back to the labelled simulated races if OpenF1 is unreachable.
-      - run: python manage.py import_openf1 || python manage.py seed_demo
+      # Real 2025 races from OpenF1. If the import fails, the job stops and the last
+      # successful deployment stays live, so the public demo never shows simulated races.
+      - run: python manage.py import_openf1
       - run: python manage.py export_site _site
       - uses: actions/upload-pages-artifact@v3
         with:

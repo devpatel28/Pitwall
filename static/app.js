@@ -77,6 +77,95 @@ function render(data) {
   data.drivers.forEach(d=>d.laps.forEach(l=>{const row=el('tr');[d.driver,l.lap,l.seconds===null?'Missing':l.seconds.toFixed(3),l.pit?'Pit lap':l.clean?'Clean':'Flagged'].forEach(v=>row.append(el('td',v)));rows.append(row);}));
   window.PitwallMotion?.results(document.getElementById('results'), colors);
   renderChart();
+  renderGap();
+  renderDegradation();
+}
+const COMPOUND_COLORS = {SOFT:'#ff7776',MEDIUM:'#e5c966',HARD:'#dfe6eb',INTERMEDIATE:'#78ca8f',WET:'#6aafff',UNKNOWN:'#97a0a8'};
+const signed = (v, digits = 3) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(digits)}`;
+// Gap over the race: cumulative lap-time difference from the first lap both drivers have a time.
+function renderGap() {
+  const container = document.getElementById('gap-chart'), summary = document.getElementById('gap-summary');
+  container.replaceChildren(); summary.textContent = '';
+  const [a, b] = current.drivers;
+  const ta = new Map(a.laps.map(l => [l.lap, l.seconds])), tb = new Map(b.laps.map(l => [l.lap, l.seconds]));
+  const last = Math.max(...a.laps.map(l => l.lap), ...b.laps.map(l => l.lap));
+  const points = []; let total = 0, startLap = null, stoppedAt = null;
+  for(let n = 1; n <= last; n++) {
+    const sa = ta.get(n), sb = tb.get(n), both = sa != null && sb != null;
+    if(startLap === null) { if(!both) continue; startLap = n; }
+    if(!both) { stoppedAt = n; break; }
+    total += sb - sa; points.push({lap: n, gap: total});
+  }
+  if(points.length < 2) { container.append(el('p', 'Not enough shared lap times to track the gap between these drivers.', 'chart-note')); return; }
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg'); svg.setAttribute('viewBox', '0 0 1080 260'); svg.setAttribute('role', 'img');
+  const node = (tag, attrs, text, parent = svg) => {const n = document.createElementNS(ns, tag); Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v)); if(text) n.textContent = text; parent.append(n); return n;};
+  const peak = Math.max(1, ...points.map(p => Math.abs(p.gap))) * 1.1;
+  const x = n => 56 + ((n - 1) / Math.max(1, last - 1)) * 1000;
+  const y = g => 125 - g / peak * 105;
+  const defs = node('defs', {});
+  const above = node('clipPath', {id: 'gap-above'}, null, defs); node('rect', {x: 0, y: 0, width: 1080, height: y(0)}, null, above);
+  const below = node('clipPath', {id: 'gap-below'}, null, defs); node('rect', {x: 0, y: y(0), width: 1080, height: 260}, null, below);
+  for(const v of [-peak / 1.1, -peak / 2.2, peak / 2.2, peak / 1.1]) {
+    node('line', {x1: 56, x2: 1056, y1: y(v), y2: y(v), stroke: '#2b343c', 'stroke-dasharray': '3 5'});
+    node('text', {x: 5, y: y(v) + 4, fill: '#a1adb7', 'font-size': 11}, `${signed(v, 1)}s`);
+  }
+  for(let n = 1; n <= last; n += Math.max(1, Math.floor(last / 8))) node('text', {x: x(n), y: 254, fill: '#a1adb7', 'font-size': 11, 'text-anchor': 'middle'}, String(n));
+  const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(p.lap).toFixed(1)},${y(p.gap).toFixed(1)}`).join(' ');
+  const area = `${line} L${x(points[points.length - 1].lap).toFixed(1)},${y(0)} L${x(points[0].lap).toFixed(1)},${y(0)} Z`;
+  node('path', {d: area, fill: colors[0], 'fill-opacity': .16, stroke: 'none', 'clip-path': 'url(#gap-above)', class: 'gap-area'});
+  node('path', {d: area, fill: colors[1], 'fill-opacity': .16, stroke: 'none', 'clip-path': 'url(#gap-below)', class: 'gap-area'});
+  node('line', {x1: 56, x2: 1056, y1: y(0), y2: y(0), stroke: '#55626d'});
+  node('text', {x: 1052, y: 22, fill: colors[0], 'font-size': 11, 'text-anchor': 'end'}, `${a.driver} AHEAD`);
+  node('text', {x: 1052, y: 236, fill: colors[1], 'font-size': 11, 'text-anchor': 'end'}, `${b.driver} AHEAD`);
+  node('path', {d: line, fill: 'none', stroke: '#eef1f3', 'stroke-width': 2.2, 'stroke-linejoin': 'round'});
+  const byLap = new Map(points.map(p => [p.lap, p.gap]));
+  [a, b].forEach((d, i) => d.stops.forEach(lap => {
+    if(!byLap.has(lap)) return;
+    const marker = node('circle', {cx: x(lap), cy: y(byLap.get(lap)), r: 5, fill: colors[i], stroke: '#0c1013', 'stroke-width': 2, tabindex: 0, 'aria-label': `${d.driver} pit stop, lap ${lap}`});
+    node('title', {}, `${d.driver} pit stop · lap ${lap}`, marker);
+  }));
+  const final = points[points.length - 1];
+  const bestA = points.reduce((m, p) => p.gap > m.gap ? p : m, {gap: 0}), bestB = points.reduce((m, p) => p.gap < m.gap ? p : m, {gap: 0});
+  const leader = final.gap > 0 ? a.driver : b.driver;
+  const parts = [final.gap === 0 ? `Level after lap ${final.lap}.` : `${leader} ahead by ${Math.abs(final.gap).toFixed(3)} s after lap ${final.lap}.`];
+  const leads = [];
+  if(bestA.gap > 0) leads.push(`${a.driver} ${bestA.gap.toFixed(1)} s (lap ${bestA.lap})`);
+  if(bestB.gap < 0) leads.push(`${b.driver} ${Math.abs(bestB.gap).toFixed(1)} s (lap ${bestB.lap})`);
+  if(leads.length) parts.push(`Largest lead: ${leads.join(' · ')}.`);
+  if(startLap > 1) parts.push(`Measured from the end of lap ${startLap}.`);
+  if(stoppedAt) parts.push(`Stops at lap ${stoppedAt - 1}: a lap time is missing after that.`);
+  summary.textContent = parts.join(' ');
+  svg.setAttribute('aria-label', `Gap between ${a.driver} and ${b.driver} over the race. ${summary.textContent}`);
+  container.append(svg);
+  window.PitwallMotion?.chart(container);
+}
+// Tyre degradation: per-stint slope of clean lap times, computed by the server.
+function renderDegradation() {
+  const box = document.getElementById('degradation'), summary = document.getElementById('deg-summary');
+  box.replaceChildren(); summary.textContent = '';
+  const rated = current.drivers.flatMap(d => d.stints.filter(s => s.trend).map(s => ({driver: d.driver, stint: s})));
+  const scale = Math.max(0.05, ...rated.map(r => Math.abs(r.stint.trend.per_lap)));
+  current.drivers.forEach((d, i) => {
+    const row = el('div', undefined, 'deg-row'), name = el('strong', d.driver), list = el('div', undefined, 'deg-list');
+    name.style.color = colors[i];
+    d.stints.forEach(s => {
+      const card = el('div', undefined, 'deg-card'); card.style.setProperty('--compound', COMPOUND_COLORS[s.compound] || COMPOUND_COLORS.UNKNOWN);
+      card.append(el('small', `${s.compound} · LAPS ${s.start}–${s.end}`));
+      if(s.trend) {
+        const v = s.trend.per_lap, bar = el('i', undefined, v < 0 ? 'deg-bar neg' : 'deg-bar');
+        bar.style.setProperty('--w', `${Math.max(4, Math.min(100, Math.abs(v) / scale * 100))}%`);
+        card.append(el('b', `${signed(v)} s/lap`), bar, el('span', `${s.trend.laps} clean laps`));
+      } else card.append(el('b', '—'), el('span', 'Too few clean laps to rate'));
+      list.append(card);
+    });
+    row.append(name, list); box.append(row);
+  });
+  if(rated.length) {
+    const best = rated.reduce((m, r) => r.stint.trend.per_lap < m.stint.trend.per_lap ? r : m);
+    const worst = rated.reduce((m, r) => r.stint.trend.per_lap > m.stint.trend.per_lap ? r : m);
+    summary.textContent = best === worst ? `${best.driver} on ${best.stint.compound}: ${signed(best.stint.trend.per_lap)} s/lap.` : `Most consistent stint: ${best.driver} on ${best.stint.compound} (${signed(best.stint.trend.per_lap)} s/lap). Steepest drop-off: ${worst.driver} on ${worst.stint.compound} (${signed(worst.stint.trend.per_lap)} s/lap).`;
+  }
 }
 async function loadComparison(params) {
   if(!window.PITWALL_STATIC) return fetch(`/api/comparison/?${params}`);

@@ -4,6 +4,12 @@ A Django application by Dev Patel for comparing lap pace and tyre strategy using
 
 **Status:** working version. The 2025 Monaco, British, Belgian, Italian, Las Vegas and Abu Dhabi Grands Prix are imported from [OpenF1](https://openf1.org), an unofficial, community-run F1 timing API. Other races can be imported with the same command or through a validated CSV. If OpenF1 cannot be reached, clearly labelled simulated demo races are loaded instead. No prediction engine or live timing integration is included yet.
 
+## Live demo
+
+**[devpatel28.github.io/Pitwall](https://devpatel28.github.io/Pitwall/)** is a read-only copy of the race explorer: comparisons, charts, tyre stints and fastest-lap replays all work, but accounts and saved comparisons need the full Django app.
+
+On every push to `main`, the *Deploy demo to GitHub Pages* workflow imports the races from OpenF1, runs `python manage.py export_site _site` to pre-render the page and write each race's data as JSON, and publishes the result. You can build the same copy locally with `python manage.py export_site`.
+
 ## Open in GitHub Codespaces
 
 Run Pitwall in the cloud from any browser, with no local install.

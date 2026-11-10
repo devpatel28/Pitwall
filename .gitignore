@@ -7,3 +7,4 @@ staticfiles/
 .coverage
 .pytest_cache/
 .DS_Store
+_site/

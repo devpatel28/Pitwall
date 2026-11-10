@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -24,7 +25,7 @@ def dashboard(request):
     races = list(Race.objects.all())
     catalog = [{'id': r.id, 'name': str(r), 'circuit': r.circuit, 'source': r.source, 'drivers': list(r.laps.order_by('driver').values_list('driver', flat=True).distinct()), 'podium': (r.replay or {}).get('podium', []), 'replay': bool(r.replay)} for r in races]
     saved = Bookmark.objects.filter(user=request.user).select_related('race') if request.user.is_authenticated else []
-    return render(request, 'dashboard.html', {'catalog': catalog, 'saved': saved})
+    return render(request, 'dashboard.html', {'catalog': catalog, 'saved': saved, 'static_export': getattr(settings, 'STATIC_EXPORT', False)})
 
 @require_GET
 def comparison(request):
